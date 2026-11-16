@@ -27,6 +27,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# run.sh runtime state (created by ./run.sh on start/stop)
+.run.pid
+.run.log
+
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts

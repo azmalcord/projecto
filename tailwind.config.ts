@@ -6,8 +6,8 @@ const config: Config = {
       addUtilities({
         ".orbital-ring": {
           "@apply absolute rounded-full": {},
-          "border": "1px solid rgba(239,68,68,0.18)",
-          "box-shadow": "0 0 40px -12px rgba(239,68,68,0.25), inset 0 0 30px -18px rgba(239,68,68,0.18)",
+          "border": "1px solid rgba(48,72,97,0.18)",
+          "box-shadow": "0 0 40px -12px rgba(48,72,97,0.25), inset 0 0 30px -18px rgba(48,72,97,0.18)",
         },
         ".dna-strand": {
           "animation": "dna-move 14s ease-in-out infinite",
@@ -18,7 +18,7 @@ const config: Config = {
           "animation": "float 9s ease-in-out infinite",
         },
         ".node": {
-          "filter": "drop-shadow(0 0 4px rgba(239,68,68,0.5))",
+          "filter": "drop-shadow(0 0 4px rgba(48,72,97,0.5))",
         },
       });
     },
@@ -32,16 +32,16 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50: "#FFF5F5",
-          100: "#FFE3E3",
-          200: "#FFC2C2",
-          300: "#FF9A9A",
-          400: "#F5625E",
-          500: "#EF4444",
-          600: "#DC2626",
-          700: "#B91C1C",
-          800: "#991B1B",
-          900: "#7F1D1D",
+          50: "#F0F4F8",
+          100: "#D6E0EA",
+          200: "#B3C6D8",
+          300: "#8BA6C4",
+          400: "#496985",
+          500: "#304861",
+          600: "#182335",
+          700: "#111A27",
+          800: "#0C111A",
+          900: "#080B10",
         },
         bg: {
           deep: "#050505",
@@ -67,14 +67,14 @@ const config: Config = {
         "gradient-conic":
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
         "hero-glow":
-          "radial-gradient(ellipse at 65% 22%, rgba(239,68,68,0.06), transparent 60%), radial-gradient(ellipse at 30% 80%, rgba(239,68,68,0.04), transparent 60%)",
-        "red-gradient":
-          "linear-gradient(135deg, #EF4444, #B91C1C)",
+          "radial-gradient(ellipse at 65% 22%, rgba(48,72,97,0.18), transparent 60%), radial-gradient(ellipse at 30% 80%, rgba(48,72,97,0.12), transparent 60%)",
+        "navy-gradient":
+          "linear-gradient(135deg, #304861, #182335)",
       },
       boxShadow: {
-        glow: "0 0 30px -8px rgba(239,68,68,0.35)",
+        glow: "0 0 30px -8px rgba(48,72,97,0.45)",
         card: "0 18px 50px -22px rgba(0,0,0,0.9)",
-        "inset-red": "inset 0 0 0 1px rgba(239,68,68,0.25)",
+        "inset-navy": "inset 0 0 0 1px rgba(48,72,97,0.35)",
       },
       keyframes: {
         "fade-up": {

@@ -79,7 +79,7 @@ export function Footer() {
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/5 pt-6 text-xs text-text-muted sm:flex-row">
           <p>© {year} {SITE.name} — {SITE.brand}. All rights reserved.</p>
           <p className="flex items-center gap-1.5">
-            Made with science in the lab
+            Made by Azmal
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-500" style={{ animation: "pulse-glow 2.5s ease-in-out infinite" }} />
           </p>
         </div>

@@ -1,19 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 export type Theme = "light" | "dark";
 
 const STORAGE_KEY = "aortic-theme";
 
-function readSaved(): Theme {
+function getInitialTheme(): Theme {
+  if (typeof window === "undefined") return "light";
   try {
-    const t = localStorage.getItem(STORAGE_KEY);
-    if (t === "light" || t === "dark") return t;
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === "light" || saved === "dark") return saved;
   } catch {
     /* ignore */
   }
-  return "light";
+  // No saved preference: respect the OS setting.
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 function applyTheme(theme: Theme) {
@@ -22,25 +24,22 @@ function applyTheme(theme: Theme) {
   root.classList.toggle("dark", theme === "dark");
 }
 
+const ThemeContext = createContext<{
+  theme: Theme;
+  setTheme: (t: Theme) => void;
+  mounted: boolean;
+}>({ theme: "light", setTheme: () => {}, mounted: false });
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    // Re-apply the saved preference on mount so client state always matches
-    // the inline script that ran during SSR.
-    applyTheme(readSaved());
-    setMounted(true);
-  }, []);
-
-  return <>{children}</>;
-}
-
-export function useTheme() {
   const [theme, setThemeState] = useState<Theme>("light");
   const [mounted, setMounted] = useState(false);
 
+  // Read the initial theme synchronously on first client render so the
+  // inline <script> in <html> and React never disagree (no hydration mismatch).
   useEffect(() => {
-    setThemeState(readSaved());
+    const initial = getInitialTheme();
+    applyTheme(initial);
+    setThemeState(initial);
     setMounted(true);
   }, []);
 
@@ -54,5 +53,11 @@ export function useTheme() {
     }
   };
 
-  return { theme, setTheme, mounted };
+  const value = useMemo(() => ({ theme, setTheme, mounted }), [theme]);
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
+export function useTheme() {
+  return useContext(ThemeContext);
 }

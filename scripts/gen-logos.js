@@ -3,6 +3,9 @@
 const fs = require("fs");
 const path = require("path");
 
+// Brand accent — keep in sync with the CSS/Tailwind design tokens.
+const ACCENT = "#304861";
+
 function helix({ cx, top, bottom, amp, periods }) {
   const height = bottom - top;
   const n = 70;
@@ -35,14 +38,14 @@ function mark({ size, cx, cy, r, top, bottom, amp, periods, stroke, bg }) {
   const rungLines = h.rungs
     .map((p) => {
       const [x1, y1, x2, y2] = p.split(" ").map(Number);
-      return `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="#EF4444" stroke-width="${stroke}" stroke-linecap="round" />`;
+      return `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${ACCENT}" stroke-width="${stroke}" stroke-linecap="round" />`;
     })
     .join("\n          ");
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" fill="none">
   ${bg ? `<rect width="${size}" height="${size}" rx="${Math.round(size * 0.25)}" fill="${bg}" />` : ""}
-  <circle cx="${cx}" cy="${cy}" r="${r}" stroke="#EF4444" stroke-width="${stroke}" opacity="0.95" />
-  <polyline points="${h.left}" stroke="#EF4444" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-  <polyline points="${h.right}" stroke="#EF4444" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.8" />
+  <circle cx="${cx}" cy="${cy}" r="${r}" stroke="${ACCENT}" stroke-width="${stroke}" opacity="0.95" />
+  <polyline points="${h.left}" stroke="${ACCENT}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <polyline points="${h.right}" stroke="${ACCENT}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.8" />
   ${rungLines}
 </svg>`;
 }

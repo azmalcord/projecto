@@ -9,6 +9,7 @@ export function Hero() {
       <ScienceBackground />
       <Snowfall />
       <div className="absolute inset-0 bg-hero-glow opacity-60" />
+      <div className="absolute inset-0 bg-grid opacity-30" />
       <div className="absolute inset-0 bg-grid opacity-40" />
       <div className="relative mx-auto flex max-w-6xl flex-col items-center px-4 py-24 text-center sm:px-6 sm:py-32">
         <Link href="/" className="mb-6 flex items-center gap-2.5">

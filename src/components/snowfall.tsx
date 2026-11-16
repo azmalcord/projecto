@@ -8,13 +8,13 @@ export function Snowfall() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    const count = 50;
+    const count = 45;
     const newSnow = Array.from({ length: count }).map(() => ({
       left: `${Math.random() * 100}%`,
-      size: `${Math.random() * 4 + 2}px`,
+      size: `${Math.random() * 3 + 2}px`,
       delay: `${Math.random() * 10}s`,
-      dur: `${Math.random() * 10 + 10}s`,
-      opacity: `${Math.random() * 0.5 + 0.1}`,
+      dur: `${Math.random() * 8 + 10}s`,
+      opacity: `${Math.random() * 0.4 + 0.2}`,
     }));
     setSnow(newSnow);
   }, []);

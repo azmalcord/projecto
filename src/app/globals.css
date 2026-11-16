@@ -4,23 +4,28 @@
 
 :root {
   color-scheme: dark;
-  --bg: #050505;
-  --bg-soft: #0a0a0a;
-  --bg-elevated: #141414;
-  --bg-card: #0e0e0e;
-  --bg-card-2: #101010;
-  --text: #f5f5f5;
-  --text-secondary: #8a8a8a;
-  --text-muted: #555555;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --accent: #ef4444;
-  --accent-soft: rgba(239, 68, 68, 0.12);
-  --accent-glow: rgba(239, 68, 68, 0.25);
+  --bg: #05060b;
+  --bg-soft: #080b14;
+  --bg-elevated: #0c101c;
+  --bg-card: #0a0e18;
+  --bg-card-2: #0d111c;
+  --text: #f5f7fa;
+  --text-secondary: #9aa6b8;
+  --text-muted: #5b6578;
+  --border: rgba(48, 72, 97, 0.28);
+  --border-strong: rgba(48, 72, 97, 0.5);
+  --accent: #304861;
+  --accent-soft: rgba(48, 72, 97, 0.28);
+  --accent-glow: rgba(48, 72, 97, 0.55);
   --shadow: 0 18px 50px -22px rgba(0, 0, 0, 0.9);
-  --grid: rgba(255, 255, 255, 0.018);
-  --scrollbar: rgba(255, 255, 255, 0.06);
-  --focus: #dc2626;
+  --grid: rgba(48, 72, 97, 0.16);
+  --scrollbar: rgba(48, 72, 97, 0.5);
+  --focus: #304861;
+
+  /* Snow: white on dark, near-black on light so flakes read against either
+     background. --snow-glow adds a soft halo on dark mode only. */
+  --snow: #ffffff;
+  --snow-glow: 0 0 6px rgba(255, 255, 255, 0.55);
 }
 
 html {
@@ -36,7 +41,7 @@ body {
   transition: background-color 0.35s ease, color 0.35s ease;
 }
 
-/* Light mode — clean white / warm ivory, soft golden-yellow accents */
+/* Light mode — clean white / warm ivory, navy blue accents */
 [data-theme="light"] {
   color-scheme: light;
   --bg: #f7f5f0;
@@ -47,15 +52,19 @@ body {
   --text: #1a1715;
   --text-secondary: #5c5650;
   --text-muted: #8a837a;
-  --border: rgba(20, 12, 4, 0.08);
-  --border-strong: rgba(20, 12, 4, 0.14);
-  --accent: #d93b2e;
-  --accent-soft: rgba(217, 59, 46, 0.1);
-  --accent-glow: rgba(217, 59, 46, 0.22);
+  --border: rgba(48, 72, 97, 0.14);
+  --border-strong: rgba(48, 72, 97, 0.24);
+  --accent: #304861;
+  --accent-soft: rgba(48, 72, 97, 0.12);
+  --accent-glow: rgba(48, 72, 97, 0.32);
   --shadow: 0 18px 50px -22px rgba(20, 12, 4, 0.25);
-  --grid: rgba(20, 12, 4, 0.05);
-  --scrollbar: rgba(20, 12, 4, 0.12);
-  --focus: #b91c1c;
+  --grid: rgba(48, 72, 97, 0.08);
+  --scrollbar: rgba(48, 72, 97, 0.2);
+  --focus: #182335;
+
+  /* Snow: dark flakes on the light background so they stay visible. */
+  --snow: #182335;
+  --snow-glow: none;
 }
 
 .bg-grid {
@@ -66,7 +75,7 @@ body {
 }
 
 .text-gradient {
-  background-image: linear-gradient(135deg, var(--accent), #b91c1c);
+  background-image: linear-gradient(135deg, var(--accent), #182335);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -208,14 +217,15 @@ a {
 .bg-hero-glow {
   background-image:
     radial-gradient(ellipse at 65% 22%, var(--accent-glow), transparent 60%),
-    radial-gradient(ellipse at 30% 80%, rgba(239,68,68,0.04), transparent 60%);
+    radial-gradient(ellipse at 30% 80%, rgba(48,72,97,0.06), transparent 60%);
 }
 
 .snow-flake {
   position: absolute;
-  background: white;
+  background: var(--snow);
   border-radius: 50%;
   pointer-events: none;
+  box-shadow: var(--snow-glow);
   animation: fall linear infinite;
 }
 
