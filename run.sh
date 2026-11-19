@@ -1,54 +1,154 @@
+
 #!/usr/bin/env bash
-# AORTIC EDU — one-command launcher.
+# ============================================================
+# AORTIC EDU — PREMIUM PRODUCTION LAUNCHER
 #
-#   ./run.sh            build (if needed) + start the production server in the
-#                       background, then print the URL.
-#   ./run.sh stop       stop the background server started by this script.
-#   ./run.sh foreground run the server in the foreground (useful for logs).
+# ./run.sh             Build (if needed) + background start
+# ./run.sh stop        Stop background server
+# ./run.sh restart     Restart server
+# ./run.sh foreground Run server in foreground
 #
-# Works on Debian / Ubuntu / any Linux with Node >= 18 and Bash >= 4.
+# Node >= 18 | Bash >= 4
+# Original process management preserved.
+# ============================================================
+
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
-# Ensure this file is executable even on a fresh clone (git may drop the
-# exec bit; e.g. a Windows checkout or a tarball without mode bits).
+# ------------------------------------------------------------
+# COLORS
+# ------------------------------------------------------------
+
+RESET='\033[0m'
+BOLD='\033[1m'
+DIM='\033[2m'
+
+CYAN='\033[38;5;51m'
+PURPLE='\033[38;5;141m'
+GREEN='\033[38;5;82m'
+RED='\033[38;5;196m'
+YELLOW='\033[38;5;220m'
+WHITE='\033[97m'
+GRAY='\033[38;5;245m'
+
+# Disable colors when output is redirected.
+if [[ ! -t 1 ]]; then
+  RESET='' BOLD='' DIM=''
+  CYAN='' PURPLE='' GREEN='' RED=''
+  YELLOW='' WHITE='' GRAY=''
+fi
+
+# ------------------------------------------------------------
+# BANNER
+# ------------------------------------------------------------
+
+show_banner() {
+  clear 2>/dev/null || true
+
+  echo -e "${CYAN}${BOLD}"
+  cat <<'EOF'
+       █████╗  ██████╗ ████████╗██╗ ██████╗
+      ██╔══██╗██╔═══██╗╚══██╔══╝██║██╔════╝
+      ███████║██║   ██║   ██║   ██║██║
+      ██╔══██║██║   ██║   ██║   ██║██║
+      ██║  ██║╚██████╔╝   ██║   ██║╚██████╗
+EOF
+  echo -e "${RESET}"
+
+  echo -e "${PURPLE}${BOLD}             AORTIC EDU${RESET}"
+  echo -e "${GRAY}          PRODUCTION SERVER MANAGER${RESET}"
+  echo -e "${CYAN}     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  echo ""
+}
+
+# ------------------------------------------------------------
+# COLORED OUTPUT
+# ------------------------------------------------------------
+
+info() {
+  echo -e " ${CYAN}➜${RESET} $*"
+}
+
+success() {
+  echo -e " ${GREEN}✔${RESET} $*"
+}
+
+warning() {
+  echo -e " ${YELLOW}!${RESET} $*"
+}
+
+error() {
+  echo -e " ${RED}✖ ERROR:${RESET} $*" >&2
+}
+
+# ------------------------------------------------------------
+# PROGRESS BAR
+# ------------------------------------------------------------
+
+progress() {
+  local percent="$1"
+  local message="$2"
+  local width=30
+
+  local filled=$((percent * width / 100))
+  local empty=$((width - filled))
+
+  local left right
+
+  printf -v left '%*s' "$filled" ''
+  printf -v right '%*s' "$empty" ''
+
+  left="${left// /█}"
+  right="${right// /░}"
+
+  echo -e ""
+  echo -e " ${CYAN}[${left}${right}]${RESET} ${BOLD}${WHITE}${percent}%${RESET}"
+  echo -e " ${PURPLE}${message}${RESET}"
+  echo ""
+}
+
+# ------------------------------------------------------------
+# EXECUTABLE PERMISSION
+# ------------------------------------------------------------
+
 if [[ ! -x "$0" ]]; then
   chmod +x "$0" 2>/dev/null || true
 fi
 
-# ---------------------------------------------------------------------------
-# Environment
-# ---------------------------------------------------------------------------
+# ------------------------------------------------------------
+# ENVIRONMENT
+# ------------------------------------------------------------
+
 NODE_BIN="$(command -v node || true)"
+
 if [[ -z "$NODE_BIN" ]]; then
-  echo "ERROR: Node.js is not installed. Install it (Debian/Ubuntu):"
-  echo "  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -"
-  echo "  sudo -E apt-get install -y nodejs"
-  echo "then re-run this script."
+  error "Node.js is not installed."
+  echo "Install Node.js using:"
+  echo "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -"
+  echo "sudo apt-get install -y nodejs"
   exit 1
 fi
 
 NODE_VERSION="$(node --version 2>/dev/null || true)"
 NODE_MAJOR="${NODE_VERSION#v}"
 NODE_MAJOR="${NODE_MAJOR%%.*}"
+
 if ! [[ "$NODE_MAJOR" =~ ^[0-9]+$ ]] || (( NODE_MAJOR < 18 )); then
-  echo "ERROR: Node >= 18 is required (found ${NODE_VERSION:-unknown})."
+  error "Node >= 18 required. Found ${NODE_VERSION:-unknown}."
   exit 1
 fi
 
-# npm ships with Node, but some minimal installs (e.g. a bare node binary,
-# or the Debian "nodejs" package without npm) only provide `node`. Bail out
-# early with a clear message instead of failing inside `npm install`.
 if ! command -v npm >/dev/null 2>&1; then
-  echo "ERROR: npm is not installed. Install it (Debian/Ubuntu):"
-  echo "  sudo -E apt-get install -y npm"
-  echo "or use a full Node.js release from https://nodejs.org/."
+  error "NPM is not installed."
   exit 1
 fi
 
-# Load .env if present (so PORT / NEXT_PUBLIC_* take effect).
+# ------------------------------------------------------------
+# LOAD ENVIRONMENT
+# ------------------------------------------------------------
+
 if [[ -f "$ROOT/.env" ]]; then
   set -a
   # shellcheck disable=SC1090
@@ -58,141 +158,268 @@ fi
 
 PORT="${PORT:-8080}"
 HOST="${HOST:-0.0.0.0}"
+
 PIDFILE="$ROOT/.run.pid"
 LOGFILE="$ROOT/.run.log"
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+# ------------------------------------------------------------
+# HELPERS
+# ------------------------------------------------------------
+
 is_running() {
   [[ -f "$PIDFILE" ]] || return 1
+
   local pid
   pid="$(cat "$PIDFILE" 2>/dev/null || true)"
+
   [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
 }
+
+# ------------------------------------------------------------
+# STOP SERVER
+# Original stop logic preserved.
+# ------------------------------------------------------------
 
 stop_server() {
   if is_running; then
     local pid
     pid="$(cat "$PIDFILE")"
-    echo "Stopping server (pid ${pid}) ..."
+
+    info "Stopping AORTIC EDU (PID ${pid})..."
+
     kill "$pid" 2>/dev/null || true
-    # Wait up to 10s for a graceful exit.
+
     for _ in $(seq 1 50); do
       kill -0 "$pid" 2>/dev/null || break
       sleep 0.2
     done
+
     kill -9 "$pid" 2>/dev/null || true
+
     rm -f "$PIDFILE"
-    echo "Stopped."
+
+    success "Server stopped."
   else
-    echo "No running server found."
+    warning "No running server found."
   fi
 }
+
+# ------------------------------------------------------------
+# PORT CHECK
+# Original wait logic preserved.
+# ------------------------------------------------------------
 
 wait_for_port() {
   local host="$1" port="$2" tries="${3:-60}"
   local i
+
   for ((i = 1; i <= tries; i++)); do
-    # Prefer nc when it is actually usable. Some distros ship an nc that
-    # exists but is a no-op stub (e.g. "netcat-openbsd" symlinked to
-    # "nc.traditional"), so probe it rather than trusting `command -v`.
-    if command -v nc >/dev/null 2>&1 && nc -z "$host" "$port" 2>/dev/null; then
+
+    if command -v nc >/dev/null 2>&1 &&
+       nc -z "$host" "$port" 2>/dev/null; then
       return 0
     fi
-    # Fallback: open a TCP socket with bash /dev/tcp (works on Bash >= 4,
-    # which is what Debian/Ubuntu/any modern distro ship).
+
     if (exec 3<>"/dev/tcp/${host}/${port}") 2>/dev/null; then
       exec 3>&- 3<&- 2>/dev/null || true
       return 0
     fi
+
     sleep 1
   done
+
   return 1
 }
 
-# ---------------------------------------------------------------------------
-# Commands
-# ---------------------------------------------------------------------------
-cmd_stop() {
-  stop_server
+# ------------------------------------------------------------
+# DEPENDENCIES
+# ------------------------------------------------------------
+
+install_dependencies() {
+  if [[ ! -d "$ROOT/node_modules" ]]; then
+    info "Installing application dependencies..."
+
+    npm install --no-audit --no-fund
+
+    success "Dependencies installed."
+  else
+    success "Dependencies already installed."
+  fi
 }
 
-cmd_foreground() {
-  if [[ ! -d "$ROOT/node_modules" ]]; then
-    echo "Installing dependencies ..."
-    npm install --no-audit --no-fund
+# ------------------------------------------------------------
+# PRODUCTION BUILD
+# ------------------------------------------------------------
+
+build_application() {
+  if [[ ! -d "$ROOT/.next/server" ]] ||
+     [[ "${FORCE_REBUILD:-0}" == "1" ]]; then
+
+    info "Building production bundle..."
+
+    npm run build
+
+    success "Production build completed."
+  else
+    success "Production build already present."
   fi
-  if [[ ! -d "$ROOT/.next" ]]; then
-    echo "Building ..."
+}
+
+# ------------------------------------------------------------
+# FOREGROUND MODE
+# ------------------------------------------------------------
+
+cmd_foreground() {
+  show_banner
+
+  progress 15 "Checking application dependencies..."
+  install_dependencies
+
+  progress 50 "Preparing production build..."
+  if [[ ! -d "$ROOT/.next" ]] ||
+     [[ "${FORCE_REBUILD:-0}" == "1" ]]; then
     npm run build
   fi
-  echo "Starting server on http://0.0.0.0:${PORT} (foreground, Ctrl+C to stop)"
+
+  progress 100 "Starting foreground server..."
+
+  echo -e "${GREEN}${BOLD}"
+  echo " AORTIC EDU is starting..."
+  echo -e "${RESET}"
+
+  echo " http://0.0.0.0:${PORT}"
+  echo ""
+  echo " Press Ctrl+C to stop."
+
   exec npm run start
 }
 
+# ------------------------------------------------------------
+# START MODE
+# Original nohup/npm startup preserved.
+# ------------------------------------------------------------
+
 cmd_start() {
+
+  show_banner
+
   if is_running; then
-    echo "Server already running on http://0.0.0.0:${PORT} (pid $(cat "$PIDFILE"))"
+    success "Server already running."
+    echo ""
+    echo " URL: http://localhost:${PORT}"
+    echo " PID: $(cat "$PIDFILE")"
     return 0
   fi
 
-  # 1) Dependencies
-  if [[ ! -d "$ROOT/node_modules" ]]; then
-    echo "Installing dependencies ..."
-    npm install --no-audit --no-fund
-  fi
+  progress 10 "Initializing AORTIC EDU..."
 
-  # 2) Build (only if there is no production output, or a rebuild is requested)
-  if [[ ! -d "$ROOT/.next/server" ]] || [[ "${FORCE_REBUILD:-0}" == "1" ]]; then
-    echo "Building production bundle ..."
-    npm run build
-  else
-    echo "Production build already present (set FORCE_REBUILD=1 to rebuild)."
-  fi
+  # 1. Dependencies
+  progress 25 "Installing dependencies..."
+  install_dependencies
 
-  # 3) Start in the background
-  echo "Starting server in the background ..."
+  # 2. Production build
+  progress 55 "Preparing production bundle..."
+  build_application
+
+  # 3. Background startup
+  progress 75 "Starting production server..."
+
   : > "$LOGFILE"
+
   nohup npm run start > "$LOGFILE" 2>&1 &
+
   echo $! > "$PIDFILE"
 
-  # 4) Wait until it answers.
+  # 4. Health / port check
+  progress 90 "Waiting for server response..."
+
   if wait_for_port "127.0.0.1" "$PORT" 60; then
+
+    progress 100 "AORTIC EDU successfully launched!"
+
     echo ""
-    echo "✓ AORTIC EDU is running:"
-    echo "    http://localhost:${PORT}"
-    local ip
-    # Prefer the address on the default route (works on any Linux with
-    # iproute2, the standard on Debian/Ubuntu). Fall back to hostname -I,
-    # which can return several addresses on multi-homed hosts.
+    echo -e "${GREEN}${BOLD}"
+    echo "  ╔══════════════════════════════════════╗"
+    echo "  ║       AORTIC EDU IS ONLINE           ║"
+    echo "  ╚══════════════════════════════════════╝"
+    echo -e "${RESET}"
+
+    echo -e "${CYAN}  LOCAL ACCESS${RESET}"
+    echo "  http://localhost:${PORT}"
+
+    local ip=""
+
     if command -v ip >/dev/null 2>&1; then
-      ip="$(ip route 2>/dev/null | awk '/default/ {for (i=1;i<=NF;i++) if ($i=="via") {print $(i+1); exit}}')"
+      ip="$(ip route 2>/dev/null |
+        awk '/default/ {for(i=1;i<=NF;i++) if($i=="via") {print $(i+1); exit}}')"
     fi
+
     if [[ -z "$ip" ]]; then
       ip="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
     fi
+
     if [[ -n "$ip" ]]; then
-      echo "    http://${ip}:${PORT}  (on your network)"
+      echo "  http://${ip}:${PORT} (network)"
     fi
+
     echo ""
-    echo "  Logs:     tail -f ${LOGFILE}"
-    echo "  Stop:     ./run.sh stop"
+    echo -e "${PURPLE}  SERVER INFORMATION${RESET}"
+    echo "  Node.js : $NODE_VERSION"
+    echo "  PID     : $(cat "$PIDFILE")"
+    echo "  Port    : $PORT"
+
+    echo ""
+    echo -e "${PURPLE}  MANAGEMENT${RESET}"
+    echo "  Logs    : tail -f $LOGFILE"
+    echo "  Stop    : ./run.sh stop"
+    echo "  Restart : ./run.sh restart"
+
+    echo ""
+    echo -e "${GREEN}  Deployment ready.${RESET}"
+    echo ""
+
   else
-    echo "ERROR: server did not come up in time. Recent log:"
+
+    error "Server did not start in time."
+
+    echo ""
+    echo "Recent application logs:"
     tail -n 40 "$LOGFILE" || true
+
     stop_server
     exit 1
+
   fi
 }
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
+# ------------------------------------------------------------
+# ENTRY POINT
+# ------------------------------------------------------------
+
 case "${1:-start}" in
-  start)        cmd_start ;;
-  stop)         cmd_stop ;;
-  restart)      stop_server; cmd_start ;;
-  foreground)   cmd_foreground ;;
-  *)            echo "Usage: $0 {start|stop|restart|foreground}"; exit 2 ;;
+
+  start)
+    cmd_start
+    ;;
+
+  stop)
+    show_banner
+    stop_server
+    ;;
+
+  restart)
+    show_banner
+    stop_server
+    cmd_start
+    ;;
+
+  foreground)
+    cmd_foreground
+    ;;
+
+  *)
+    echo "Usage: $0 {start|stop|restart|foreground}"
+    exit 2
+    ;;
+
 esac
